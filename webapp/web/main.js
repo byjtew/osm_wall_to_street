@@ -45,6 +45,9 @@ const map = new maplibregl.Map({
 	maxZoom: 18,
 	attributionControl: false,
 	preserveDrawingBuffer: true,
+	canvasContextAttributes: {
+		preserveDrawingBuffer: true,
+	},
 });
 
 map.on("zoom", () => {
@@ -528,17 +531,46 @@ unitsBtn.addEventListener("click", () => {
 	updateSliderMaxDisplay();
 });
 
-document.getElementById("screenshot-btn").addEventListener("click", () => {
-	const canvas = map.getCanvas();
-	canvas.toBlob((blob) => {
-		if (!blob) return;
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `osm_wall_to_street-${Date.now()}.png`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-	}, "image/png");
+const screenshotBtn = document.getElementById("screenshot-btn");
+
+const downloadBlob = (blob) => {
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `osm_wall_to_street-${Date.now()}.png`;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
+};
+
+const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
+	try {
+		canvas.toBlob((blob) => {
+			if (blob) {
+				resolve(blob);
+				return;
+			}
+			reject(new Error("Screenshot export returned an empty blob."));
+		}, "image/png");
+	} catch (err) {
+		reject(err);
+	}
+});
+
+const showScreenshotError = (err) => {
+	console.error("Screenshot failed", err);
+	window.alert("Screenshot failed. This is usually caused by cross-origin resources without proper CORS headers.");
+};
+
+screenshotBtn.addEventListener("click", async () => {
+	try {
+		map.triggerRepaint();
+		await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+		const canvas = map.getCanvas();
+		const blob = await canvasToBlob(canvas);
+		downloadBlob(blob);
+	} catch (err) {
+		showScreenshotError(err);
+	}
 });
