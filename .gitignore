@@ -1,0 +1,11 @@
+/rust/target
+/webapp/dist
+/webapp/node_modules
+*.pmtiles
+*.mbtiles
+*.mbtiles-journal
+*.geojson
+*.pbf
+*.log
+*.tmp
+.DS_Store

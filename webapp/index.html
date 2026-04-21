@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>OSM Wall-to-Street: visualizing proximity in OSM</title>
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://byjtew.github.io/" />
+		<meta property="og:title" content="OSM Wall-to-Street: visualizing proximity in OSM" />
+		<meta property="og:description" content="How close are building walls to the nearest road? An interactive map visualizing wall-to-street proximity using OpenStreetMap data. Explore the map now!" />
+		<meta property="og:image" content="https://byjtew.github.io/preview.png" />
+		<meta property="og:image:alt" content="Wall-to-Street Proximity Map - Explore Now" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content="https://byjtew.github.io/preview.png" />
+	</head>
+	<body>
+		<div id="ui">
+			<h3>OSM Wall-to-Street Proximity</h3>
+			<div class="subtitle">How close are building walls to the nearest road?</div>
+			<details>
+				<summary><button id="about-open-btn" type="button">Details</button></summary>
+			</details>
+		</div>
+		<div id="about-modal" aria-hidden="true">
+			<div id="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+				<button id="about-close-btn" type="button" aria-label="Close about panel">x</button>
+				<h3 id="about-title">OSM Wall-to-Street Proximity</h3>
+				<div class="subtitle">How close are building walls to the nearest road?</div>
+				<div id="about-body">
+					<p>Each building contour from <strong>OpenStreetMap</strong> is processed to compute the distance from every wall vertex to the nearest road segment (excluding selected road types).</p>
+					<p>Distances are stored as a per-vertex <code>distances</code> array and visualized as a continuous color gradient.</p>
+					<p><strong>Level of detail:</strong> below zoom 14, one dot per building or cluster; from zoom 14 and above, each wall segment is rendered individually.</p>
+					<p><strong>Pipeline:</strong> .osm.pbf -&gt; Rust processing -&gt; GeoJSON -&gt; tippecanoe -&gt; PMTiles.</p>
+					<p><strong>Rendering stack:</strong> Deck.gl + MapLibre GL JS.</p>
+				</div>
+				<div class="footer-tech">
+					<div class="footer-tech-title">The tech-stack</div>
+					<div class="footer-tech-badges">
+						<a href="https://deck.gl/" target="_blank" rel="noopener">
+							<img src="https://img.shields.io/badge/Deck.gl-Visualization-1B3C73?style=flat-square" alt="Deck.gl" style="vertical-align: middle" />
+						</a>
+						<a href="https://maplibre.org/" target="_blank" rel="noopener">
+							<img src="https://img.shields.io/badge/MapLibre-GL%20JS-0099A8?style=flat-square" alt="MapLibre" style="vertical-align: middle" />
+						</a>
+						<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">
+							<img src="https://img.shields.io/badge/OpenStreetMap-Data-7EBC6F?style=flat-square" alt="OpenStreetMap" style="vertical-align: middle" />
+						</a>
+						<a href="https://osmcode.org/osmium-tool/" target="_blank" rel="noopener">
+							<img src="https://img.shields.io/badge/Osmium-Tooling-4C8EDA?style=flat-square" alt="Osmium" style="vertical-align: middle" />
+						</a>
+						<a href="https://github.com/felt/tippecanoe" target="_blank" rel="noopener">
+							<img src="https://img.shields.io/badge/Tippecanoe-Tile%20Builder-5F6BC2?style=flat-square" alt="Tippecanoe" style="vertical-align: middle" />
+						</a>
+						<a href="https://www.rust-lang.org/" target="_blank" rel="noopener">
+							<img src="https://img.shields.io/badge/Made%20with-Rust-EA6A22?style=flat-square&logo=rust&logoColor=white" alt="Made with Rust" style="vertical-align: middle" />
+						</a>
+					</div>
+				</div>
+				<div class="footer">
+					<a href="https://github.com/byjtew/osm_wall_to_street" target="_blank" rel="noopener">
+						<img src="https://img.shields.io/github/stars/byjtew/osm_wall_to_street?style=flat-square" alt="GitHub" style="vertical-align: middle" />
+					</a>
+					<a href="https://www.buymeacoffee.com/66mv2x94smf" target="_blank" rel="noopener">
+						<img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy me a coffee" style="vertical-align: middle" />
+					</a>
+					<a href="https://mastodon.social/@byjtew" target="_blank" rel="noopener me">
+						<img src="https://img.shields.io/badge/@byjtew-6364FF?style=flat-square&logo=mastodon&logoColor=white" alt="Mastodon" style="vertical-align: middle" />
+					</a>
+					<a href="https://github.com/byjtew/osm_wall_to_street/blob/main/LICENSE" target="_blank" rel="noopener">
+						<img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License" style="vertical-align: middle" />
+					</a>
+				</div>
+			</div>
+		</div>
+		<div id="slider-bar">
+			<div id="slider-wrap">
+				<div id="slider-meta">
+					Gradient range <span id="dist-value"></span>
+				</div>
+				<div id="dist-slider">
+					<div class="range-track"></div>
+					<div id="dist-slider-active" class="range-active"></div>
+					<input id="dist-slider-min" type="range" min="0" max="200" step="0.5" value="5" aria-label="Minimum gradient distance" />
+					<input id="dist-slider-max" type="range" min="0" max="200" step="0.5" value="35" aria-label="Maximum gradient distance" />
+				</div>
+				<canvas id="colormap-preview" height="12"></canvas>
+			</div>
+			<div id="max-override">
+				<button id="slider-max-display" type="button" aria-label="Edit max distance"></button>
+				<input id="slider-max-input" type="text" inputmode="numeric" pattern="[0-9]*" value="200" aria-label="Set max distance" />
+			</div>
+			<div id="colormap-picker" aria-label="Color map">
+				<button id="colormap-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+					<span id="colormap-current-swatch"></span>
+					<span id="colormap-current-label"></span>
+				</button>
+				<div id="colormap-menu" role="listbox" aria-label="Choose color map"></div>
+			</div>
+		</div>
+		<div id="search-bar">
+			<div id="search-wrap">
+				<span id="search-icon">⌕</span>
+				<input id="search-input" type="text" placeholder="Search a location..." autocomplete="off" spellcheck="false" />
+				<button id="search-clear" title="Clear">✕</button>
+			</div>
+			<div id="search-results"></div>
+		</div>
+		<div id="map-menu">
+			<div id="map-menu-items">
+				<button class="menu-item" id="screenshot-btn">Screenshot</button>
+				<button class="menu-item" id="units-btn">Switch to feet</button>
+				<button class="menu-item" id="basemap-btn">Dark map</button>
+			</div>
+			<button id="map-menu-trigger">⋮</button>
+		</div>
+		<div id="container"></div>
+		<div id="osm-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></div>
+		<script type="module" src="/web/main.js"></script>
+	</body>
+</html>
