@@ -455,9 +455,19 @@ const updateDatasetUi = () => {
 };
 
 const smoothEasing = (t) => 1 - (1 - t) ** 3;
+let hasTeleportedToDatasetOnce = false;
 
 const smoothTeleportTo = (dataset) => {
 	map.stop();
+	if (!hasTeleportedToDatasetOnce) {
+		map.jumpTo({
+			center: dataset.center,
+			zoom: dataset.zoom,
+		});
+		hasTeleportedToDatasetOnce = true;
+		return;
+	}
+
 	map.easeTo({
 		center: dataset.center,
 		zoom: dataset.zoom,
