@@ -9,7 +9,12 @@ import { PMTiles } from "pmtiles";
 import { VectorTile } from "@mapbox/vector-tile";
 import Pbf from "pbf";
 
-const pmtilesFile = new PMTiles("https://osm.darlink.space/data.pmtiles");
+const TILESET_INDEX_URL = "https://osm.darlink.space/tileset.json";
+const INITIAL_VIEW = { center: [0, 20], zoom: 2 };
+
+let datasets = [];
+let currentDataset = null;
+let pmtilesFile = null;
 
 let minDist = 5;
 let maxDist = 35;
@@ -40,8 +45,8 @@ let basemapIdx = 0;
 const map = new maplibregl.Map({
 	container: "container",
 	style: BASEMAPS[0].url,
-	center: [-105.068, 39.7],
-	zoom: 11,
+	center: INITIAL_VIEW.center,
+	zoom: INITIAL_VIEW.zoom,
 	maxZoom: 18,
 	attributionControl: false,
 	preserveDrawingBuffer: true,
@@ -102,7 +107,7 @@ const getColor = (dist) => {
 
 const buildLayers = () => [
 	new TileLayer({
-		id: "dots-layer",
+		id: `dots-layer-${currentDataset?.key ?? "none"}`,
 		beforeId: firstLabelId,
 		visible: currentZoom < 14,
 		minZoom: 0,
@@ -110,6 +115,7 @@ const buildLayers = () => [
 		tileSize: 512,
 		updateTriggers: { renderSubLayers: [minDist, maxDist, currentColorMap] },
 		getTileData: async ({ index: { x, y, z } }) => {
+			if (!pmtilesFile) return [];
 			const tile = await pmtilesFile.getZxy(z, x, y);
 			if (!tile || !tile.data) return [];
 			const vt = new VectorTile(new Pbf(tile.data));
@@ -135,7 +141,7 @@ const buildLayers = () => [
 	}),
 
 	new TileLayer({
-		id: "lines-layer",
+		id: `lines-layer-${currentDataset?.key ?? "none"}`,
 		beforeId: firstLabelId,
 		visible: currentZoom >= 14,
 		minZoom: 14,
@@ -143,6 +149,7 @@ const buildLayers = () => [
 		tileSize: 512,
 		updateTriggers: { renderSubLayers: [minDist, maxDist, currentColorMap] },
 		getTileData: async ({ index: { x, y, z } }) => {
+			if (!pmtilesFile) return [];
 			const tile = await pmtilesFile.getZxy(z, x, y);
 			if (!tile || !tile.data) return [];
 			const vt = new VectorTile(new Pbf(tile.data));
@@ -387,6 +394,153 @@ document.addEventListener("click", (e) => {
 	}
 });
 
+const datasetMenu = document.getElementById("dataset-menu");
+const datasetTrigger = document.getElementById("dataset-trigger");
+const datasetCurrentLabel = document.getElementById("dataset-current-label");
+
+const normalizeDatasetEntry = (entry) => {
+	if (!entry || typeof entry !== "object") return null;
+	const key = typeof entry.key === "string" ? entry.key.trim() : "";
+	const label = typeof entry.label === "string" ? entry.label.trim() : "";
+	const pmtilesUrl = typeof entry.pmtilesUrl === "string" ? entry.pmtilesUrl.trim() : "";
+	const center = Array.isArray(entry.center) ? entry.center : [];
+	const lon = Number.parseFloat(center[0]);
+	const lat = Number.parseFloat(center[1]);
+	const zoom = Number.parseFloat(entry.zoom);
+
+	if (!key || !label || !pmtilesUrl) return null;
+	if (!Number.isFinite(lon) || !Number.isFinite(lat) || !Number.isFinite(zoom)) return null;
+
+	return {
+		key,
+		label,
+		pmtilesUrl,
+		center: [lon, lat],
+		zoom,
+	};
+};
+
+const normalizeTilesetPayload = (payload) => {
+	const list = Array.isArray(payload)
+		? payload
+		: Array.isArray(payload?.datasets)
+			? payload.datasets
+			: [];
+
+	const seen = new Set();
+	const normalized = [];
+	list.forEach((entry) => {
+		const parsed = normalizeDatasetEntry(entry);
+		if (!parsed || seen.has(parsed.key)) return;
+		seen.add(parsed.key);
+		normalized.push(parsed);
+	});
+
+	return normalized;
+};
+
+const closeDatasetMenu = () => {
+	datasetMenu.classList.remove("open");
+	datasetTrigger.setAttribute("aria-expanded", "false");
+};
+
+const updateDatasetUi = () => {
+	datasetCurrentLabel.textContent = currentDataset?.label ?? "No datasets";
+	datasetTrigger.disabled = datasets.length === 0;
+	datasetMenu.querySelectorAll(".dataset-option").forEach((btn) => {
+		const isActive = btn.dataset.key === currentDataset?.key;
+		btn.classList.toggle("active", isActive);
+		btn.setAttribute("aria-selected", isActive ? "true" : "false");
+	});
+};
+
+const smoothEasing = (t) => 1 - (1 - t) ** 3;
+
+const smoothTeleportTo = (dataset) => {
+	map.stop();
+	map.easeTo({
+		center: dataset.center,
+		zoom: dataset.zoom,
+		duration: 1400,
+		easing: smoothEasing,
+		essential: true,
+	});
+};
+
+const applyDataset = (datasetKey) => {
+	const next = datasets.find((dataset) => dataset.key === datasetKey);
+	if (!next) return;
+
+	if (!currentDataset || next.key !== currentDataset.key) {
+		currentDataset = next;
+		pmtilesFile = new PMTiles(currentDataset.pmtilesUrl);
+		updateDatasetUi();
+		if (overlay) overlay.setProps({ layers: buildLayers() });
+	}
+
+	smoothTeleportTo(next);
+};
+
+const rebuildDatasetMenu = () => {
+	datasetMenu.innerHTML = "";
+	if (!datasets.length) {
+		updateDatasetUi();
+		return;
+	}
+	datasets.forEach((dataset) => {
+		const option = document.createElement("button");
+		option.type = "button";
+		option.role = "option";
+		option.className = "dataset-option";
+		option.dataset.key = dataset.key;
+		option.textContent = dataset.label;
+		option.setAttribute("aria-selected", "false");
+		option.addEventListener("click", () => {
+			applyDataset(dataset.key);
+			closeDatasetMenu();
+		});
+		datasetMenu.appendChild(option);
+	});
+	updateDatasetUi();
+};
+
+const loadDatasetsFromEndpoint = async () => {
+	try {
+		const response = await fetch(TILESET_INDEX_URL, { cache: "no-store" });
+		if (!response.ok) throw new Error(`Failed to fetch ${TILESET_INDEX_URL}: ${response.status}`);
+		const payload = await response.json();
+		const nextDatasets = normalizeTilesetPayload(payload);
+		if (!nextDatasets.length) throw new Error("Tileset index did not contain valid datasets.");
+
+		datasets = nextDatasets;
+		currentDataset = datasets[0];
+		pmtilesFile = new PMTiles(currentDataset.pmtilesUrl);
+		rebuildDatasetMenu();
+		if (overlay) overlay.setProps({ layers: buildLayers() });
+		smoothTeleportTo(currentDataset);
+	} catch (err) {
+		console.error("Failed to load datasets from endpoint.", err);
+		datasets = [];
+		currentDataset = null;
+		pmtilesFile = null;
+		rebuildDatasetMenu();
+		if (overlay) overlay.setProps({ layers: buildLayers() });
+	}
+};
+
+datasetTrigger.addEventListener("click", () => {
+	const willOpen = !datasetMenu.classList.contains("open");
+	datasetMenu.classList.toggle("open", willOpen);
+	datasetTrigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
+});
+
+document.addEventListener("click", (e) => {
+	if (!e.target.closest("#dataset-picker")) closeDatasetMenu();
+});
+
+rebuildDatasetMenu();
+loadDatasetsFromEndpoint();
+
 const aboutModal = document.getElementById("about-modal");
 
 document.addEventListener("keydown", (e) => {
@@ -394,6 +548,7 @@ document.addEventListener("keydown", (e) => {
 		if (aboutModal.classList.contains("open")) setAboutOpen(false);
 		colormapMenu.classList.remove("open");
 		colormapTrigger.setAttribute("aria-expanded", "false");
+		closeDatasetMenu();
 	}
 });
 

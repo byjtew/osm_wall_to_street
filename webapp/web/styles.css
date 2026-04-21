@@ -32,6 +32,86 @@ body {
 	color: #bbb;
 	margin-bottom: 0;
 }
+#dataset-picker {
+	position: relative;
+	flex-shrink: 0;
+}
+#dataset-trigger {
+	width: min(190px, 36vw);
+	min-width: 126px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 0 14px;
+	background: rgba(28, 28, 28, 0.86);
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.26);
+	border-radius: 999px;
+	font-size: 13px;
+	font-family: inherit;
+	cursor: pointer;
+	text-align: left;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+#dataset-trigger::after {
+	content: "▾";
+	font-size: 10px;
+	opacity: 0.85;
+}
+#dataset-trigger:focus-visible {
+	outline: 2px solid rgba(255, 255, 255, 0.6);
+	outline-offset: 1px;
+}
+#dataset-current-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#dataset-menu {
+	display: none;
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	padding: 6px;
+	min-width: 220px;
+	border-radius: 10px;
+	background: rgba(14, 14, 14, 0.96);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+	z-index: 22;
+	max-height: 210px;
+	overflow-y: auto;
+}
+#dataset-menu.open {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.dataset-option {
+	width: 100%;
+	border: 1px solid transparent;
+	background: transparent;
+	color: #ddd;
+	padding: 6px 8px;
+	font: inherit;
+	font-size: 12px;
+	text-align: left;
+	border-radius: 7px;
+	cursor: pointer;
+}
+.dataset-option:hover {
+	background: rgba(255, 255, 255, 0.1);
+	color: #fff;
+}
+.dataset-option.active {
+	border-color: rgba(255, 255, 255, 0.25);
+	background: rgba(255, 255, 255, 0.08);
+	color: #fff;
+}
 #ui details {
 	margin-top: 8px;
 }
@@ -420,14 +500,21 @@ body {
 	left: 50%;
 	transform: translateX(-50%);
 	z-index: 10;
-	width: 380px;
+	width: min(620px, calc(100vw - 40px));
 	max-width: calc(100vw - 40px);
 	font-family: "Helvetica Neue", Arial, sans-serif;
+}
+#search-top-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 #search-wrap {
 	position: relative;
 	display: flex;
 	align-items: center;
+	flex: 1;
+	min-width: 0;
 	background: rgba(28, 28, 28, 0.86);
 	backdrop-filter: blur(12px);
 	-webkit-backdrop-filter: blur(12px);
@@ -518,6 +605,21 @@ body {
 	font-size: 13px;
 	color: #666;
 	font-style: italic;
+}
+@media (max-width: 640px) {
+	#search-top-row {
+		gap: 8px;
+	}
+	#dataset-trigger {
+		width: min(150px, 42vw);
+		min-width: 108px;
+		height: 38px;
+		padding: 0 10px;
+		font-size: 12px;
+	}
+	#dataset-menu {
+		min-width: 170px;
+	}
 }
 #map-menu {
 	position: absolute;
@@ -610,6 +712,29 @@ body.light-ui #about-open-btn {
 	color: #444;
 }
 body.light-ui #about-open-btn:hover {
+	color: #111;
+}
+body.light-ui #dataset-trigger {
+	background: rgba(255, 255, 255, 0.9);
+	color: #111;
+	border-color: rgba(0, 0, 0, 0.2);
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+}
+body.light-ui #dataset-menu {
+	background: rgba(255, 255, 255, 0.97);
+	border-color: rgba(0, 0, 0, 0.14);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+body.light-ui .dataset-option {
+	color: #333;
+}
+body.light-ui .dataset-option:hover {
+	background: rgba(0, 0, 0, 0.06);
+	color: #111;
+}
+body.light-ui .dataset-option.active {
+	border-color: rgba(0, 0, 0, 0.18);
+	background: rgba(0, 0, 0, 0.08);
 	color: #111;
 }
 body.light-ui #ui {

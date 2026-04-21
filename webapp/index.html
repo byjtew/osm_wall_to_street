@@ -98,10 +98,18 @@
 			</div>
 		</div>
 		<div id="search-bar">
-			<div id="search-wrap">
-				<span id="search-icon">⌕</span>
-				<input id="search-input" type="text" placeholder="Search a location..." autocomplete="off" spellcheck="false" />
-				<button id="search-clear" title="Clear">✕</button>
+			<div id="search-top-row">
+				<div id="search-wrap">
+					<span id="search-icon">⌕</span>
+					<input id="search-input" type="text" placeholder="Search a location..." autocomplete="off" spellcheck="false" />
+					<button id="search-clear" title="Clear">✕</button>
+				</div>
+				<div id="dataset-picker" aria-label="Dataset">
+					<button id="dataset-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+						<span id="dataset-current-label"></span>
+					</button>
+					<div id="dataset-menu" role="listbox" aria-label="Choose dataset"></div>
+				</div>
 			</div>
 			<div id="search-results"></div>
 		</div>
