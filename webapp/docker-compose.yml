@@ -1,8 +1,0 @@
-services:
-  webapp:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./serve.py:/app/serve.py:ro
-      - .:/app:ro
