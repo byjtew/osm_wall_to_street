@@ -1,4 +1,4 @@
-# OSM Wall2Street
+# OSM Wall-to-Street
 
 ![Preview](webapp/public/preview.png)
 
