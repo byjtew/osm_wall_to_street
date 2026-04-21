@@ -2,6 +2,10 @@
 
 ![Preview](webapp/public/preview.png)
 
+[Interactive demo](https://byjtew.github.io/)
+
+---
+
 ## Repository layout
 
 - `rust/`: Rust extractor + Python tiling/build scripts
