@@ -571,6 +571,7 @@ const searchResults = document.getElementById("search-results");
 let searchDebounce = null;
 
 const closeResults = () => {
+	if (!searchResults) return;
 	searchResults.innerHTML = "";
 	searchResults.classList.remove("open");
 };
@@ -578,10 +579,11 @@ const closeResults = () => {
 const flyTo = (lon, lat, zoom = 15) => {
 	map.flyTo({ center: [lon, lat], zoom, duration: 800 });
 	closeResults();
-	searchInput.blur();
+	if (searchInput) searchInput.blur();
 };
 
 const doSearch = async (query) => {
+	if (!searchInput || !searchResults) return;
 	if (!query.trim()) {
 		closeResults();
 		return;
@@ -610,33 +612,35 @@ const doSearch = async (query) => {
 	searchResults.classList.add("open");
 };
 
-searchInput.addEventListener("input", () => {
-	searchClear.classList.toggle("visible", searchInput.value.length > 0);
-	clearTimeout(searchDebounce);
-	searchDebounce = setTimeout(() => doSearch(searchInput.value), 350);
-});
-
-searchInput.addEventListener("keydown", (e) => {
-	if (e.key === "Enter") {
+if (searchInput && searchClear && searchResults) {
+	searchInput.addEventListener("input", () => {
+		searchClear.classList.toggle("visible", searchInput.value.length > 0);
 		clearTimeout(searchDebounce);
-		doSearch(searchInput.value);
-	}
-	if (e.key === "Escape") {
+		searchDebounce = setTimeout(() => doSearch(searchInput.value), 350);
+	});
+
+	searchInput.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") {
+			clearTimeout(searchDebounce);
+			doSearch(searchInput.value);
+		}
+		if (e.key === "Escape") {
+			closeResults();
+			searchInput.blur();
+		}
+	});
+
+	searchClear.addEventListener("click", () => {
+		searchInput.value = "";
+		searchClear.classList.remove("visible");
 		closeResults();
-		searchInput.blur();
-	}
-});
+		searchInput.focus();
+	});
 
-searchClear.addEventListener("click", () => {
-	searchInput.value = "";
-	searchClear.classList.remove("visible");
-	closeResults();
-	searchInput.focus();
-});
-
-document.addEventListener("click", (e) => {
-	if (!e.target.closest("#search-bar")) closeResults();
-});
+	document.addEventListener("click", (e) => {
+		if (!e.target.closest("#search-bar")) closeResults();
+	});
+}
 
 const menuTrigger = document.getElementById("map-menu-trigger");
 const menuItems = document.getElementById("map-menu-items");
@@ -650,11 +654,22 @@ const setAboutOpen = (isOpen) => {
 	aboutModal.setAttribute("aria-hidden", isOpen ? "false" : "true");
 };
 
+const openAboutModal = () => {
+	if (aboutDetails) aboutDetails.open = false;
+	setAboutOpen(true);
+};
+
+if (aboutDetails) {
+	aboutDetails.addEventListener("toggle", () => {
+		if (!aboutDetails.open) return;
+		openAboutModal();
+	});
+}
+
 aboutOpenBtn.addEventListener("click", (e) => {
 	e.preventDefault();
 	e.stopPropagation();
-	if (aboutDetails) aboutDetails.open = false;
-	setAboutOpen(true);
+	openAboutModal();
 });
 aboutCloseBtn.addEventListener("click", () => setAboutOpen(false));
 aboutModal.addEventListener("click", (e) => {
