@@ -3,12 +3,11 @@
 Build a single PMTiles archive from a directory of .osm.pbf files.
 
 For each <name>.osm.pbf the script produces:
-  <work_dir>/<name>_walls.geojson
-  <work_dir>/<name>_centroids.geojson
   <work_dir>/<name>_dots.mbtiles
   <work_dir>/<name>_walls.mbtiles
 
-If all four already exist, that region is skipped (restartable).
+GeoJSON intermediates are deleted automatically after mbtiles are produced.
+If both mbtiles already exist, that region is skipped (restartable).
 Finally all per-region mbtiles are joined into a single PMTiles file.
 
 Usage:
@@ -98,8 +97,6 @@ def main() -> None:
     parser.add_argument("output_pmtiles", type=Path, help="Path for the output .pmtiles file")
     parser.add_argument("--work-dir",     type=Path, default=None,
                         help="Directory for intermediates (default: <input_dir>/work)")
-    parser.add_argument("--clean-geojson", action="store_true",
-                        help="Delete per-region GeoJSON files after mbtiles are produced")
     args = parser.parse_args()
 
     input_dir: Path = args.input_dir
@@ -128,14 +125,13 @@ def main() -> None:
         dots_mb, walls_mb = process_region(pbf, work_dir)
         all_dots_mbtiles.append(dots_mb)
         all_walls_mbtiles.append(walls_mb)
-        if args.clean_geojson:
-            for geojson in [
-                work_dir / f"{pbf.stem}_walls.geojson",
-                work_dir / f"{pbf.stem}_centroids.geojson",
-            ]:
-                if geojson.exists():
-                    geojson.unlink()
-                    print(f"[clean] Removed {geojson}")
+        for geojson in [
+            work_dir / f"{pbf.stem}_walls.geojson",
+            work_dir / f"{pbf.stem}_centroids.geojson",
+        ]:
+            if geojson.exists():
+                geojson.unlink()
+                print(f"[clean] Removed {geojson}")
 
     # 4. tile-join: merge everything into one PMTiles
     print("\n=== Joining all mbtiles into PMTiles ===")
