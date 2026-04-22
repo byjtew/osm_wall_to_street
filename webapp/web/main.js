@@ -38,6 +38,7 @@ const INITIAL_VIEW = { center: [0, 20], zoom: 2 };
 const DATASET_PRESET_SOURCE_ID = "dataset-presets";
 const DATASET_PRESET_HALO_LAYER_ID = "dataset-presets-halo";
 const DATASET_PRESET_LAYER_ID = "dataset-presets";
+const DATASET_PRESET_LABEL_LAYER_ID = "dataset-presets-label";
 
 let datasets = [];
 let currentDataset = null;
@@ -91,12 +92,14 @@ map.on("zoom", () => {
 
 let overlay = null;
 let firstLabelId = null;
+let hoveredDatasetPresetId = null;
 
 const applyMapLabelVisibility = () => {
 	const layers = map.getStyle()?.layers ?? [];
 	const visibility = showMapLabels ? "visible" : "none";
 	layers.forEach((layer) => {
 		if (layer.type !== "symbol") return;
+		if (layer.id === DATASET_PRESET_LABEL_LAYER_ID) return;
 		try {
 			map.setLayoutProperty(layer.id, "visibility", visibility);
 		} catch {
@@ -109,6 +112,7 @@ const ensureDatasetPresetLayers = () => {
 	if (!map.getSource(DATASET_PRESET_SOURCE_ID)) {
 		map.addSource(DATASET_PRESET_SOURCE_ID, {
 			type: "geojson",
+			promoteId: "datasetKey",
 			data: datasetPresetData,
 		});
 	}
@@ -140,6 +144,40 @@ const ensureDatasetPresetLayers = () => {
 			},
 		}, firstLabelId);
 	}
+
+	if (!map.getLayer(DATASET_PRESET_LABEL_LAYER_ID)) {
+		map.addLayer({
+			id: DATASET_PRESET_LABEL_LAYER_ID,
+			type: "symbol",
+			source: DATASET_PRESET_SOURCE_ID,
+			layout: {
+				"text-field": ["get", "label"],
+				"text-size": 11,
+				"text-font": ["Open Sans Semibold", "Arial Unicode MS Regular"],
+				"text-offset": [0, -1.6],
+				"text-anchor": "bottom",
+				"text-allow-overlap": true,
+				"text-ignore-placement": true,
+			},
+			paint: {
+				"text-color": "rgba(255, 255, 255, 0.98)",
+				"text-halo-color": "rgba(12, 12, 12, 0.82)",
+				"text-halo-width": 2,
+				"text-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 1, 0],
+			},
+		}, firstLabelId);
+	}
+};
+
+const setHoveredDatasetPreset = (datasetPresetId) => {
+	if (hoveredDatasetPresetId === datasetPresetId) return;
+	if (hoveredDatasetPresetId !== null && map.getSource(DATASET_PRESET_SOURCE_ID)) {
+		map.setFeatureState({ source: DATASET_PRESET_SOURCE_ID, id: hoveredDatasetPresetId }, { hover: false });
+	}
+	hoveredDatasetPresetId = datasetPresetId;
+	if (hoveredDatasetPresetId !== null && map.getSource(DATASET_PRESET_SOURCE_ID)) {
+		map.setFeatureState({ source: DATASET_PRESET_SOURCE_ID, id: hoveredDatasetPresetId }, { hover: true });
+	}
 };
 
 const syncDatasetPresetSource = () => {
@@ -147,6 +185,7 @@ const syncDatasetPresetSource = () => {
 	ensureDatasetPresetLayers();
 	const source = map.getSource(DATASET_PRESET_SOURCE_ID);
 	if (source) source.setData(datasetPresetData);
+	if (hoveredDatasetPresetId !== null) setHoveredDatasetPreset(null);
 };
 
 map.on("style.load", () => {
@@ -158,6 +197,7 @@ map.on("style.load", () => {
 		}
 	}
 	firstLabelId = map.getStyle().layers.find((l) => l.type === "symbol")?.id ?? null;
+	hoveredDatasetPresetId = null;
 	overlay = new MapboxOverlay({ interleaved: true });
 	map.addControl(overlay);
 	overlay.setProps({ layers: buildLayers() });
@@ -175,11 +215,18 @@ map.on("click", (event) => {
 
 map.on("mousemove", (event) => {
 	if (!map.getLayer(DATASET_PRESET_LAYER_ID)) {
+		setHoveredDatasetPreset(null);
 		map.getCanvas().style.cursor = "";
 		return;
 	}
-	const hoveringPreset = map.queryRenderedFeatures(event.point, { layers: [DATASET_PRESET_LAYER_ID] }).length > 0;
-	map.getCanvas().style.cursor = hoveringPreset ? "pointer" : "";
+	const hoveredPreset = map.queryRenderedFeatures(event.point, { layers: [DATASET_PRESET_LAYER_ID] })[0] ?? null;
+	setHoveredDatasetPreset(hoveredPreset?.id ?? null);
+	map.getCanvas().style.cursor = hoveredPreset ? "pointer" : "";
+});
+
+map.on("mouseout", () => {
+	setHoveredDatasetPreset(null);
+	map.getCanvas().style.cursor = "";
 });
 
 const lerpStops = (stops, n) => {
@@ -560,6 +607,7 @@ const updateDatasetMarkers = () => {
 	datasetPresetData = {
 		type: "FeatureCollection",
 		features: visiblePresets.map((dataset) => ({
+			id: dataset.key,
 			type: "Feature",
 			geometry: {
 				type: "Point",
