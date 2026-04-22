@@ -64,7 +64,7 @@ function updateDistValue() {
 }
 
 const SLIDER_MIN = 0;
-let sliderMax = 200;
+let sliderMax = 50;
 
 const BASEMAPS = [
 	{ key: "dark", label: "Dark", url: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" },
@@ -404,7 +404,7 @@ const sliderMaxDisplay = document.getElementById("slider-max-display");
 const sliderMaxInput = document.getElementById("slider-max-input");
 
 const updateSliderMaxDisplay = () => {
-	sliderMaxDisplay.textContent = `Max: ${formatDistance(sliderMax)}`;
+	sliderMaxDisplay.innerHTML = `<span class="slider-max-label">Max:</span><span class="slider-max-value">${formatDistance(sliderMax)}</span>`;
 };
 
 const syncSliderMaxInputSize = () => {
