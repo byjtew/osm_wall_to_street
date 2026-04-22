@@ -1,13 +1,37 @@
 import "./styles.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import maplibregl from "maplibre-gl";
-import { MapboxOverlay } from "@deck.gl/mapbox";
-import { TileLayer } from "@deck.gl/geo-layers";
-import { LineLayer, ScatterplotLayer } from "@deck.gl/layers";
-import { PMTiles } from "pmtiles";
-import { VectorTile } from "@mapbox/vector-tile";
-import Pbf from "pbf";
+let maplibregl;
+let MapboxOverlay;
+let TileLayer;
+let LineLayer;
+let ScatterplotLayer;
+let PMTiles;
+let VectorTile;
+let Pbf;
+
+const loadMapRuntime = async () => {
+	const [maplibreModule, deckMapboxModule, deckGeoLayersModule, deckLayersModule, pmtilesModule, vectorTileModule, pbfModule] = await Promise.all([
+		import("maplibre-gl"),
+		import("@deck.gl/mapbox"),
+		import("@deck.gl/geo-layers"),
+		import("@deck.gl/layers"),
+		import("pmtiles"),
+		import("@mapbox/vector-tile"),
+		import("pbf"),
+	]);
+
+	maplibregl = maplibreModule.default;
+	MapboxOverlay = deckMapboxModule.MapboxOverlay;
+	TileLayer = deckGeoLayersModule.TileLayer;
+	LineLayer = deckLayersModule.LineLayer;
+	ScatterplotLayer = deckLayersModule.ScatterplotLayer;
+	PMTiles = pmtilesModule.PMTiles;
+	VectorTile = vectorTileModule.VectorTile;
+	Pbf = pbfModule.default;
+};
+
+await loadMapRuntime();
 
 const TILESET_INDEX_URL = "https://osm.darlink.space/tileset.json";
 const INITIAL_VIEW = { center: [0, 20], zoom: 2 };
