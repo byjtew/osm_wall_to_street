@@ -65,3 +65,11 @@ cd rust
 cargo run --release -- <path/to/file.osm.pbf> walls.geojson centroids.geojson
 python3 tile.py centroids.geojson walls.geojson output.pmtiles
 ```
+
+## AI disclaimer
+
+Quick honest note:
+* I built and handled the full data processing pipeline myself (the OSM parsing/extraction + tiling workflow).
+* I did use AI help for the website part. Frontend stuff is not really my specialty, and as a C++ dev it is not where I spend most of my time or interest.
+
+So yeah, data side is mine end-to-end, web side had AI assistance.
