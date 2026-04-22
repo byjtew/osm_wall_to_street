@@ -15,6 +15,7 @@ const INITIAL_VIEW = { center: [0, 20], zoom: 2 };
 let datasets = [];
 let currentDataset = null;
 let pmtilesFile = null;
+let datasetMarkers = [];
 
 let minDist = 5;
 let maxDist = 35;
@@ -444,6 +445,47 @@ const closeDatasetMenu = () => {
 	datasetTrigger.setAttribute("aria-expanded", "false");
 };
 
+const clearDatasetMarkers = () => {
+	datasetMarkers.forEach((marker) => marker.remove());
+	datasetMarkers = [];
+};
+
+const updateDatasetMarkers = () => {
+	clearDatasetMarkers();
+	if (!datasets.length) return;
+
+	const visiblePresets = datasets.filter((dataset) => dataset.key !== currentDataset?.key);
+	datasetMarkers = visiblePresets.map((dataset) => {
+		const markerEl = document.createElement("button");
+		markerEl.type = "button";
+		markerEl.className = "preset-marker";
+		markerEl.title = `Jump to ${dataset.label}`;
+		markerEl.setAttribute("aria-label", `Jump to ${dataset.label}`);
+
+		const dotEl = document.createElement("span");
+		dotEl.className = "preset-marker-dot";
+		dotEl.setAttribute("aria-hidden", "true");
+
+		const labelEl = document.createElement("span");
+		labelEl.className = "preset-marker-label";
+		labelEl.textContent = dataset.label;
+		labelEl.setAttribute("aria-hidden", "true");
+
+		markerEl.append(dotEl, labelEl);
+
+		markerEl.addEventListener("click", (event) => {
+			event.stopPropagation();
+			applyDataset(dataset.key);
+		});
+
+		const marker = new maplibregl.Marker({ element: markerEl, anchor: "center" })
+			.setLngLat(dataset.center)
+			.addTo(map);
+
+		return marker;
+	});
+};
+
 const updateDatasetUi = () => {
 	datasetCurrentLabel.textContent = currentDataset?.label ?? "No datasets";
 	datasetTrigger.disabled = datasets.length === 0;
@@ -471,7 +513,7 @@ const smoothTeleportTo = (dataset) => {
 	map.easeTo({
 		center: dataset.center,
 		zoom: dataset.zoom,
-		duration: 1400,
+		duration: 1000,
 		easing: smoothEasing,
 		essential: true,
 	});
@@ -485,6 +527,7 @@ const applyDataset = (datasetKey) => {
 		currentDataset = next;
 		pmtilesFile = new PMTiles(currentDataset.pmtilesUrl);
 		updateDatasetUi();
+		updateDatasetMarkers();
 		if (overlay) overlay.setProps({ layers: buildLayers() });
 	}
 
@@ -495,6 +538,7 @@ const rebuildDatasetMenu = () => {
 	datasetMenu.innerHTML = "";
 	if (!datasets.length) {
 		updateDatasetUi();
+		updateDatasetMarkers();
 		return;
 	}
 	datasets.forEach((dataset) => {
@@ -512,6 +556,7 @@ const rebuildDatasetMenu = () => {
 		datasetMenu.appendChild(option);
 	});
 	updateDatasetUi();
+	updateDatasetMarkers();
 };
 
 const loadDatasetsFromEndpoint = async () => {
@@ -526,6 +571,7 @@ const loadDatasetsFromEndpoint = async () => {
 		currentDataset = datasets[0];
 		pmtilesFile = new PMTiles(currentDataset.pmtilesUrl);
 		rebuildDatasetMenu();
+		updateDatasetMarkers();
 		if (overlay) overlay.setProps({ layers: buildLayers() });
 		smoothTeleportTo(currentDataset);
 	} catch (err) {
@@ -534,6 +580,7 @@ const loadDatasetsFromEndpoint = async () => {
 		currentDataset = null;
 		pmtilesFile = null;
 		rebuildDatasetMenu();
+		updateDatasetMarkers();
 		if (overlay) overlay.setProps({ layers: buildLayers() });
 	}
 };
