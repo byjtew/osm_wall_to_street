@@ -39,10 +39,11 @@ const DATASET_PRESET_SOURCE_ID = "dataset-presets";
 const DATASET_PRESET_HALO_LAYER_ID = "dataset-presets-halo";
 const DATASET_PRESET_LAYER_ID = "dataset-presets";
 const DATASET_PRESET_LABEL_LAYER_ID = "dataset-presets-label";
+const DATASET_PRESET_MAX_ZOOM = 8;
 
 let datasets = [];
 let currentDataset = null;
-let pmtilesFile = null;
+let pmtilesFiles = [];
 let datasetPresetData = { type: "FeatureCollection", features: [] };
 
 let minDist = 5;
@@ -122,6 +123,7 @@ const ensureDatasetPresetLayers = () => {
 			id: DATASET_PRESET_HALO_LAYER_ID,
 			type: "circle",
 			source: DATASET_PRESET_SOURCE_ID,
+			maxzoom: DATASET_PRESET_MAX_ZOOM,
 			paint: {
 				"circle-radius": 9,
 				"circle-color": "rgba(255, 255, 255, 0.14)",
@@ -136,6 +138,7 @@ const ensureDatasetPresetLayers = () => {
 			id: DATASET_PRESET_LAYER_ID,
 			type: "circle",
 			source: DATASET_PRESET_SOURCE_ID,
+			maxzoom: DATASET_PRESET_MAX_ZOOM,
 			paint: {
 				"circle-radius": 5,
 				"circle-color": "rgba(255, 255, 255, 0.98)",
@@ -150,6 +153,7 @@ const ensureDatasetPresetLayers = () => {
 			id: DATASET_PRESET_LABEL_LAYER_ID,
 			type: "symbol",
 			source: DATASET_PRESET_SOURCE_ID,
+			maxzoom: DATASET_PRESET_MAX_ZOOM,
 			layout: {
 				"text-field": ["get", "label"],
 				"text-size": 11,
@@ -257,6 +261,27 @@ const getColor = (dist) => {
 	return colorMaps[currentColorMap](norm);
 };
 
+const loadVectorLayerFromTile = (tileData, layerName) => {
+	if (!tileData) return null;
+	const vt = new VectorTile(new Pbf(tileData));
+	return vt.layers[layerName] ?? null;
+};
+
+const loadLayersFromAllPmtiles = async (z, x, y, layerName) => {
+	if (!pmtilesFiles.length) return [];
+	const allLayers = await Promise.all(pmtilesFiles.map(async (pmtilesFile) => {
+		try {
+			const tile = await pmtilesFile.getZxy(z, x, y);
+			if (!tile || !tile.data) return null;
+			return loadVectorLayerFromTile(tile.data, layerName);
+		} catch {
+			return null;
+		}
+	}));
+
+	return allLayers.filter(Boolean);
+};
+
 const buildLayers = () => [
 	new TileLayer({
 		id: `dots-layer-${currentDataset?.key ?? "none"}`,
@@ -267,17 +292,15 @@ const buildLayers = () => [
 		tileSize: 512,
 		updateTriggers: { renderSubLayers: [minDist, maxDist, currentColorMap] },
 		getTileData: async ({ index: { x, y, z } }) => {
-			if (!pmtilesFile) return [];
-			const tile = await pmtilesFile.getZxy(z, x, y);
-			if (!tile || !tile.data) return [];
-			const vt = new VectorTile(new Pbf(tile.data));
-			const layer = vt.layers.walls_dots;
-			if (!layer) return [];
+			const layers = await loadLayersFromAllPmtiles(z, x, y, "walls_dots");
+			if (!layers.length) return [];
 			const points = [];
-			for (let i = 0; i < layer.length; i++) {
-				const feature = layer.feature(i).toGeoJSON(x, y, z);
-				const [lon, lat] = feature.geometry.coordinates;
-				points.push({ position: [lon, lat], dist: feature.properties.avg_dist || 0 });
+			for (const layer of layers) {
+				for (let i = 0; i < layer.length; i++) {
+					const feature = layer.feature(i).toGeoJSON(x, y, z);
+					const [lon, lat] = feature.geometry.coordinates;
+					points.push({ position: [lon, lat], dist: feature.properties.avg_dist || 0 });
+				}
 			}
 			return points;
 		},
@@ -301,25 +324,23 @@ const buildLayers = () => [
 		tileSize: 512,
 		updateTriggers: { renderSubLayers: [minDist, maxDist, currentColorMap] },
 		getTileData: async ({ index: { x, y, z } }) => {
-			if (!pmtilesFile) return [];
-			const tile = await pmtilesFile.getZxy(z, x, y);
-			if (!tile || !tile.data) return [];
-			const vt = new VectorTile(new Pbf(tile.data));
-			const layer = vt.layers.walls_lines;
-			if (!layer) return [];
+			const layers = await loadLayersFromAllPmtiles(z, x, y, "walls_lines");
+			if (!layers.length) return [];
 			const segments = [];
-			for (let i = 0; i < layer.length; i++) {
-				const feature = layer.feature(i).toGeoJSON(x, y, z);
-				const coords = feature.geometry.coordinates;
-				const dists = typeof feature.properties.dists === "string"
-					? JSON.parse(feature.properties.dists)
-					: feature.properties.dists || [];
-				for (let j = 0; j < coords.length - 1; j++) {
-					segments.push({
-						sourcePosition: coords[j],
-						targetPosition: coords[j + 1],
-						dist: ((dists[j] || 0) + (dists[j + 1] || 0)) / 2,
-					});
+			for (const layer of layers) {
+				for (let i = 0; i < layer.length; i++) {
+					const feature = layer.feature(i).toGeoJSON(x, y, z);
+					const coords = feature.geometry.coordinates;
+					const dists = typeof feature.properties.dists === "string"
+						? JSON.parse(feature.properties.dists)
+						: feature.properties.dists || [];
+					for (let j = 0; j < coords.length - 1; j++) {
+						segments.push({
+							sourcePosition: coords[j],
+							targetPosition: coords[j + 1],
+							dist: ((dists[j] || 0) + (dists[j + 1] || 0)) / 2,
+						});
+					}
 				}
 			}
 			return segments;
@@ -550,23 +571,57 @@ const datasetMenu = document.getElementById("dataset-menu");
 const datasetTrigger = document.getElementById("dataset-trigger");
 const datasetCurrentLabel = document.getElementById("dataset-current-label");
 
+const isPmtilesUrl = (url) => /^pmtiles:\/\//i.test(url) || /\.pmtiles(?:$|[?#])/i.test(url);
+
+const toRawPmtilesUrl = (value) => {
+	if (typeof value !== "string") return "";
+	const trimmed = value.trim();
+	if (!trimmed) return "";
+	return trimmed.replace(/^pmtiles:\/\//i, "");
+};
+
+const normalizePmtilesUrls = (entry) => {
+	const urls = [];
+
+	if (typeof entry.pmtilesUrl === "string") {
+		urls.push(toRawPmtilesUrl(entry.pmtilesUrl));
+	}
+
+	if (Array.isArray(entry.pmtilesUrls)) {
+		entry.pmtilesUrls.forEach((url) => {
+			urls.push(toRawPmtilesUrl(url));
+		});
+	}
+
+	if (entry.sources && typeof entry.sources === "object") {
+		Object.values(entry.sources).forEach((sourceEntry) => {
+			if (!sourceEntry || typeof sourceEntry !== "object") return;
+			if (typeof sourceEntry.url !== "string") return;
+			if (!isPmtilesUrl(sourceEntry.url)) return;
+			urls.push(toRawPmtilesUrl(sourceEntry.url));
+		});
+	}
+
+	return [...new Set(urls.filter(Boolean))];
+};
+
 const normalizeDatasetEntry = (entry) => {
 	if (!entry || typeof entry !== "object") return null;
 	const key = typeof entry.key === "string" ? entry.key.trim() : "";
 	const label = typeof entry.label === "string" ? entry.label.trim() : "";
-	const pmtilesUrl = typeof entry.pmtilesUrl === "string" ? entry.pmtilesUrl.trim() : "";
+	const pmtilesUrls = normalizePmtilesUrls(entry);
 	const center = Array.isArray(entry.center) ? entry.center : [];
 	const lon = Number.parseFloat(center[0]);
 	const lat = Number.parseFloat(center[1]);
 	const zoom = Number.parseFloat(entry.zoom);
 
-	if (!key || !label || !pmtilesUrl) return null;
+	if (!key || !label || !pmtilesUrls.length) return null;
 	if (!Number.isFinite(lon) || !Number.isFinite(lat) || !Number.isFinite(zoom)) return null;
 
 	return {
 		key,
 		label,
-		pmtilesUrl,
+		pmtilesUrls,
 		center: [lon, lat],
 		zoom,
 	};
@@ -591,6 +646,18 @@ const normalizeTilesetPayload = (payload) => {
 	return normalized;
 };
 
+const collectAllPmtilesUrls = (datasetList) => {
+	const urls = [];
+	datasetList.forEach((dataset) => {
+		dataset.pmtilesUrls.forEach((url) => urls.push(url));
+	});
+	return [...new Set(urls)];
+};
+
+const refreshPmtilesFiles = () => {
+	pmtilesFiles = collectAllPmtilesUrls(datasets).map((url) => new PMTiles(url));
+};
+
 const closeDatasetMenu = () => {
 	datasetMenu.classList.remove("open");
 	datasetTrigger.setAttribute("aria-expanded", "false");
@@ -603,7 +670,7 @@ const updateDatasetMarkers = () => {
 		return;
 	}
 
-	const visiblePresets = datasets.filter((dataset) => dataset.key !== currentDataset?.key);
+	const visiblePresets = datasets;
 	datasetPresetData = {
 		type: "FeatureCollection",
 		features: visiblePresets.map((dataset) => ({
@@ -661,7 +728,6 @@ const applyDataset = (datasetKey) => {
 
 	if (!currentDataset || next.key !== currentDataset.key) {
 		currentDataset = next;
-		pmtilesFile = new PMTiles(currentDataset.pmtilesUrl);
 		updateDatasetUi();
 		updateDatasetMarkers();
 		if (overlay) overlay.setProps({ layers: buildLayers() });
@@ -705,7 +771,7 @@ const loadDatasetsFromEndpoint = async () => {
 
 		datasets = nextDatasets;
 		currentDataset = datasets[0];
-		pmtilesFile = new PMTiles(currentDataset.pmtilesUrl);
+		refreshPmtilesFiles();
 		rebuildDatasetMenu();
 		updateDatasetMarkers();
 		if (overlay) overlay.setProps({ layers: buildLayers() });
@@ -714,7 +780,7 @@ const loadDatasetsFromEndpoint = async () => {
 		console.error("Failed to load datasets from endpoint.", err);
 		datasets = [];
 		currentDataset = null;
-		pmtilesFile = null;
+		pmtilesFiles = [];
 		rebuildDatasetMenu();
 		updateDatasetMarkers();
 		if (overlay) overlay.setProps({ layers: buildLayers() });
