@@ -64,6 +64,9 @@ function updateDistValue() {
 }
 
 const SLIDER_MIN = 0;
+
+// radiusMinPixels for dot layer, keyed by tile zoom level
+const DOT_RADIUS_MIN_PIXELS = { 13: 2, 12: 1.5 };
 let sliderMax = 50;
 
 const BASEMAPS = [
@@ -317,12 +320,12 @@ const buildLayers = () => [
 			}
 			return points;
 		},
-		renderSubLayers: ({ id, data }) => new ScatterplotLayer({
+		renderSubLayers: ({ id, data, tile }) => new ScatterplotLayer({
 			id,
 			data: data || [],
 			getPosition: (d) => d.position,
 			getRadius: 2,
-			radiusMinPixels: 1,
+			radiusMinPixels: DOT_RADIUS_MIN_PIXELS[tile?.index?.z] ?? 1,
 			getFillColor: (d) => getColor(d.dist),
 			updateTriggers: { getFillColor: [minDist, maxDist, currentColorMap] },
 		}),
