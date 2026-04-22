@@ -22,6 +22,7 @@ let maxDist = 35;
 let currentZoom = 11;
 let currentColorMap = "plasma";
 let useFeet = false;
+let showMapLabels = true;
 const M_TO_FT = 3.28084;
 
 function formatDistance(meters) {
@@ -64,6 +65,19 @@ map.on("zoom", () => {
 let overlay = null;
 let firstLabelId = null;
 
+const applyMapLabelVisibility = () => {
+	const layers = map.getStyle()?.layers ?? [];
+	const visibility = showMapLabels ? "visible" : "none";
+	layers.forEach((layer) => {
+		if (layer.type !== "symbol") return;
+		try {
+			map.setLayoutProperty(layer.id, "visibility", visibility);
+		} catch {
+			// Ignore layers that cannot be toggled.
+		}
+	});
+};
+
 map.on("style.load", () => {
 	if (overlay) {
 		try {
@@ -76,6 +90,7 @@ map.on("style.load", () => {
 	overlay = new MapboxOverlay({ interleaved: true });
 	map.addControl(overlay);
 	overlay.setProps({ layers: buildLayers() });
+	applyMapLabelVisibility();
 });
 
 const lerpStops = (stops, n) => {
@@ -736,6 +751,7 @@ document.addEventListener("click", (e) => {
 });
 
 const basemapMenuBtn = document.getElementById("basemap-btn");
+const labelsBtn = document.getElementById("labels-btn");
 const syncUiTheme = () => {
 	document.body.classList.toggle("light-ui", BASEMAPS[basemapIdx].key !== "dark");
 };
@@ -743,11 +759,20 @@ const updateBasemapBtn = () => {
 	basemapMenuBtn.innerHTML = `${BASEMAPS[basemapIdx].label} map`;
 	syncUiTheme();
 };
+const updateLabelsBtn = () => {
+	labelsBtn.innerHTML = showMapLabels ? "Hide labels" : "Show labels";
+};
 updateBasemapBtn();
+updateLabelsBtn();
 basemapMenuBtn.addEventListener("click", () => {
 	basemapIdx = (basemapIdx + 1) % BASEMAPS.length;
 	map.setStyle(BASEMAPS[basemapIdx].url);
 	updateBasemapBtn();
+});
+labelsBtn.addEventListener("click", () => {
+	showMapLabels = !showMapLabels;
+	applyMapLabelVisibility();
+	updateLabelsBtn();
 });
 
 const unitsBtn = document.getElementById("units-btn");
