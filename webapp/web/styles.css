@@ -986,3 +986,132 @@ body.light-ui #osm-attribution a {
 body.light-ui #osm-attribution a:hover {
 	color: #111;
 }
+#zoom-indicator {
+	position: absolute;
+	right: 20px;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 10;
+	pointer-events: none;
+	user-select: none;
+	font-family: "Helvetica Neue", Arial, sans-serif;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 6px;
+}
+#zoom-track {
+	position: relative;
+	width: 64px;
+	height: 50vh;
+}
+/* Walls section — top 23.53% (zoom 14–18 within range 1–18): striated to suggest wall segments */
+#zoom-sect-walls {
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 6px;
+	height: 23.53%;
+	border-radius: 3px 3px 0 0;
+	background: repeating-linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.75) 0px,
+		rgba(255, 255, 255, 0.75) 2px,
+		rgba(255, 255, 255, 0.22) 2px,
+		rgba(255, 255, 255, 0.22) 5px
+	);
+}
+/* Dots section — bottom 76.47% (zoom 1–14): smooth, dimmer */
+#zoom-sect-dots {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 6px;
+	height: 76.47%;
+	border-radius: 0 0 3px 3px;
+	background: rgba(255, 255, 255, 0.2);
+}
+/* Threshold tick at zoom 14 */
+#zoom-thresh-tick {
+	position: absolute;
+	right: -2px;
+	top: 23.53%;
+	width: 10px;
+	height: 1.5px;
+	background: rgba(255, 255, 255, 0.72);
+	border-radius: 1px;
+}
+/* Moving thumb */
+#zoom-thumb {
+	position: absolute;
+	right: -3px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
+	transform: translateY(-50%);
+	transition: top 0.12s ease;
+}
+/* Section / threshold labels */
+.zoom-side-label {
+	position: absolute;
+	right: 12px;
+	font-size: 10px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	white-space: nowrap;
+	color: rgba(255, 255, 255, 0.45);
+	transform: translateY(-50%);
+}
+#zl-walls {
+	top: 11.76%;
+}
+#zl-thresh {
+	top: 23.53%;
+	color: rgba(255, 255, 255, 0.65);
+	font-weight: 600;
+}
+#zl-dots {
+	top: 61.76%;
+}
+/* Current zoom value badge */
+#zoom-badge {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.55);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.03em;
+	padding: 2px 6px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.1);
+}
+/* Light mode overrides */
+body.light-ui #zoom-sect-walls {
+	background: repeating-linear-gradient(
+		180deg,
+		rgba(0, 0, 0, 0.5) 0px,
+		rgba(0, 0, 0, 0.5) 2px,
+		rgba(0, 0, 0, 0.12) 2px,
+		rgba(0, 0, 0, 0.12) 5px
+	);
+}
+body.light-ui #zoom-sect-dots {
+	background: rgba(0, 0, 0, 0.16);
+}
+body.light-ui #zoom-thresh-tick {
+	background: rgba(0, 0, 0, 0.5);
+}
+body.light-ui #zoom-thumb {
+	background: #111;
+	box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+}
+body.light-ui .zoom-side-label {
+	color: rgba(0, 0, 0, 0.38);
+}
+body.light-ui #zl-thresh {
+	color: rgba(0, 0, 0, 0.58);
+}
+body.light-ui #zoom-badge {
+	color: rgba(0, 0, 0, 0.5);
+	background: rgba(0, 0, 0, 0.07);
+}

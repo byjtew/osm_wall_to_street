@@ -86,8 +86,21 @@ const map = new maplibregl.Map({
 	},
 });
 
+const zoomThumb = document.getElementById("zoom-thumb");
+const zoomBadge = document.getElementById("zoom-badge");
+
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 18;
+
+const updateZoomIndicator = () => {
+	const pct = ((ZOOM_MAX - currentZoom) / (ZOOM_MAX - ZOOM_MIN)) * 100;
+	zoomThumb.style.top = `${Math.max(0, Math.min(100, pct))}%`;
+	zoomBadge.textContent = `zoom: ${currentZoom.toFixed(1)}`;
+};
+
 map.on("zoom", () => {
 	currentZoom = map.getZoom();
+	updateZoomIndicator();
 	if (overlay) overlay.setProps({ layers: buildLayers() });
 });
 
@@ -951,6 +964,7 @@ const updateLabelsBtn = () => {
 };
 updateBasemapBtn();
 updateLabelsBtn();
+updateZoomIndicator();
 basemapMenuBtn.addEventListener("click", () => {
 	basemapIdx = (basemapIdx + 1) % BASEMAPS.length;
 	map.setStyle(BASEMAPS[basemapIdx].url);
