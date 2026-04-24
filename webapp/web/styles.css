@@ -226,6 +226,19 @@ body {
 	border-radius: 4px;
 	font-size: 12px;
 }
+#about-body a {
+	color: #a8c8f0;
+	text-decoration: none;
+}
+#about-body a:hover {
+	text-decoration: underline;
+}
+.tag-list {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 4px 0 6px;
+}
 #about-card .footer {
 	margin-top: 14px;
 	padding-top: 12px;
@@ -855,6 +868,9 @@ body.light-ui .search-no-result {
 }
 body.light-ui #about-body code {
 	background: rgba(0, 0, 0, 0.08);
+}
+body.light-ui #about-body a {
+	color: #1a6ab5;
 }
 body.light-ui #about-close-btn {
 	background: rgba(0, 0, 0, 0.06);

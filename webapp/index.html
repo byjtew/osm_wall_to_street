@@ -30,6 +30,13 @@
 				<div class="subtitle">How close are building walls to the nearest road?</div>
 				<div id="about-body">
 					<p>Each building contour from <strong>OpenStreetMap</strong> is processed to compute the distance from every wall vertex to the nearest road segment (excluding selected road types).</p>
+					<p>
+						<strong>Included <a href="https://wiki.openstreetmap.org/wiki/Key:highway" target="_blank" rel="noopener"><code>highway</code></a> values:</strong>
+						<span class="tag-list">
+							<code>residential</code><code>living_street</code><code>service</code><code>unclassified</code><code>primary</code><code>primary_link</code><code>secondary</code><code>secondary_link</code><code>tertiary</code><code>tertiary_link</code><code>trunk</code><code>trunk_link</code>
+						</span>
+						All other types (motorways, footways, cycleways, …) are excluded.
+					</p>
 					<p>Distances are stored as a per-vertex <code>distances</code> array and visualized as a continuous color gradient.</p>
 					<p><strong>Level of detail:</strong> below zoom 14, one dot per building or cluster; from zoom 14 and above, each wall segment is rendered individually.</p>
 					<p><strong>Pipeline:</strong> .osm.pbf -&gt; Rust processing -&gt; GeoJSON -&gt; tippecanoe -&gt; PMTiles.</p>
