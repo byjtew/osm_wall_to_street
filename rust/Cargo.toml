@@ -1,5 +1,5 @@
 [package]
-name = "osm_wall_to_street"
+name = "osm_house_to_street"
 version = "0.1.0"
 edition = "2024"
 

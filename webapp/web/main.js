@@ -993,7 +993,7 @@ const downloadBlob = (blob) => {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;
-	a.download = `osm_wall_to_street-${Date.now()}.png`;
+	a.download = `osm_house_to_street-${Date.now()}.png`;
 	document.body.appendChild(a);
 	a.click();
 	document.body.removeChild(a);
