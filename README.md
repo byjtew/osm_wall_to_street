@@ -1,8 +1,8 @@
-# OSM Wall-to-Street
+# OSM - House to street proximity map
 
 ![Preview](webapp/public/preview.png)
 
-[Interactive demo](https://byjtew.github.io/)
+[Interactive demo](https://byjtew.github.io/house_to_street)
 
 ---
 
