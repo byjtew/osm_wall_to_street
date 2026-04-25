@@ -248,6 +248,22 @@ body {
 	gap: 8px;
 	flex-wrap: wrap;
 }
+#about-osm-attribution {
+	display: none;
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid rgba(255, 255, 255, 0.12);
+	font-size: 12px;
+	color: #b8b8b8;
+}
+#about-osm-attribution a {
+	color: #b8b8b8;
+	text-decoration: none;
+}
+#about-osm-attribution a:hover {
+	color: #fff;
+	text-decoration: underline;
+}
 #about-card .footer-tech {
 	margin-top: 12px;
 	padding-top: 10px;
@@ -640,10 +656,118 @@ body {
 	color: #666;
 	font-style: italic;
 }
-@media (max-width: 640px) {
+@media (orientation: portrait) {
+	/* Hide map menu (tools button) on mobile */
+	#map-menu {
+		display: none !important;
+	}
+
+	/* Hide max edit control on mobile */
+	#max-override {
+		display: none;
+	}
+
+	/* Turn the top-left panel into a standalone icon trigger */
+	#ui {
+		background: rgba(0, 0, 0, 0.42);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+		padding: 3px;
+		border-radius: 999px;
+		line-height: 1;
+		width: auto;
+		max-width: none;
+	}
+
+	#ui h3 {
+		display: none;
+	}
+
+	#ui .subtitle {
+		display: none;
+	}
+
+	#ui details {
+		margin-top: 0;
+	}
+
+	/* Replace Details button with icon only on mobile */
+	#ui summary::before {
+		content: "ℹ";
+		font-size: 18px;
+	}
+
+	#ui summary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		gap: 0;
+		padding: 0;
+	}
+
+	#about-open-btn {
+		display: none;
+	}
+
+	/* Adjust slider bar for mobile */
+	#slider-bar {
+		width: calc(100vw - 30px);
+		max-width: none;
+		padding: 8px 12px;
+		gap: 8px;
+		flex-wrap: wrap;
+		bottom: 12px;
+	}
+
+	#slider-wrap {
+		width: 100%;
+	}
+
+	#colormap-preview {
+		width: 100%;
+	}
+
+	#dist-slider {
+		width: 100%;
+	}
+
+	#colormap-picker {
+		width: auto;
+		align-self: flex-start;
+	}
+
+	#colormap-trigger {
+		width: auto;
+		min-width: 0;
+		padding: 3px 8px;
+	}
+
+	/* Keep vertical altitude slider visible on mobile */
+	#zoom-indicator {
+		display: flex;
+		top: 50%;
+		transform: translateY(-50%);
+		right: 12px;
+	}
+
+	#zoom-track {
+		height: 50vh;
+	}
+
+	/* Keep preset selector in the top-right corner */
+	#search-bar {
+		top: 20px;
+		bottom: auto;
+		right: 20px;
+		left: auto;
+	}
+
 	#search-top-row {
 		gap: 8px;
 	}
+
 	#dataset-trigger {
 		width: min(150px, 42vw);
 		min-width: 108px;
@@ -651,8 +775,17 @@ body {
 		padding: 0 10px;
 		font-size: 12px;
 	}
+
 	#dataset-menu {
 		min-width: 170px;
+	}
+
+	#osm-attribution {
+		display: none;
+	}
+
+	#about-osm-attribution {
+		display: block;
 	}
 }
 #map-menu {
@@ -885,6 +1018,16 @@ body.light-ui #about-card .footer-tech {
 }
 body.light-ui #about-card .footer-tech-title {
 	color: #666;
+}
+body.light-ui #about-osm-attribution {
+	border-top-color: rgba(0, 0, 0, 0.12);
+	color: #666;
+}
+body.light-ui #about-osm-attribution a {
+	color: #666;
+}
+body.light-ui #about-osm-attribution a:hover {
+	color: #111;
 }
 body.light-ui #dist-value,
 body.light-ui #slider-max-display {
