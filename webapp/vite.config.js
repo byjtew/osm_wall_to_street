@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+	base: "/house_to_street/",
 	build: {
 		rollupOptions: {
 			output: {
