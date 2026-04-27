@@ -1,6 +1,6 @@
 # OSM - House to street proximity map
 
-![Preview](webapp/public/preview.png)
+![Preview](webapp/public/osm_house_to_street_denver_viridis.webp)
 
 [Interactive demo](https://byjtew.github.io/house_to_street)
 
